@@ -1,11 +1,56 @@
 #include "Reed-Solomon/include/rs.hpp"
+#include <cerrno>
+#include <cstdint>
 #include <cstring>
+#include <fcntl.h>
 #include <fec.h>
 #include <iostream>
+#include <ostream>
+#include <stdio.h>
+#include <stdlib.h>
+#include <sys/ioctl.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <termios.h>
+#include <unistd.h>
+using namespace std;
 // NEED to establish what size of ecc we want as well as how much padding
 #define ECC_LENGTH 32
 #define msglen 233
 
+int open_serial_connection(std::string port) {
+  // https://stackoverflow.com/questions/22544751/how-to-send-and-read-data-from-serial-port-in-c
+  int fd;
+  // char port[] = "/dev/ttyACM0";
+  // char cPort[port.size()];
+  // std::strncpy(cPort, port.c_str(), sizeof(cPort));
+  printf("Starting\n");
+  fd = open(port.c_str(), O_RDWR | O_NONBLOCK);
+  if (fd == -1) {
+    printf("Failed to open serial connection\n");
+    exit(1);
+  }
+  printf("Serial connection open\n");
+  struct termios tios;
+  tcgetattr(fd, &tios);
+  tios.c_iflag = IGNBRK | IGNPAR;
+  tios.c_oflag = 0;
+  tios.c_lflag = 0;
+  cfsetspeed(&tios, B9600);
+  if (tcsetattr(fd, TCSAFLUSH, &tios) == -1) {
+    printf("tcsetattr failed");
+    exit(2);
+  }
+  usleep(1000);
+  printf("Serial connection configured\n");
+  return fd;
+};
+void printBinary(uint8_t value) {
+  for (int8_t bit = 7; bit >= 0; --bit) {
+    uint8_t mask = 1 << bit;
+    std::cout << ((value & mask) ? "1" : "0");
+  }
+}
 void fixArray(const unsigned char *inputArray, size_t inputSize,
               unsigned char *outputArray, size_t outputSize) {
   // Copy input elements up to the minimum of inputSize and outputSize
@@ -51,20 +96,44 @@ int main() {
    * We expect there to be noise and corruption
    * Once we recieve we can decode
    */
-  enArr[0] = 0xa9;
-  // Decode the encoded array
-  unsigned char decArr[fixedSize];
-  decodeArray(enArr, decArr);
-  // naturalize the array
-  unsigned char normArray[decArr[3]]; // Creating an array based on
-                                      // the actual size
-  natArray(decArr, fixedSize, normArray);
 
-  // Print the decoded array
-  for (size_t i = 0; i < normArray[3]; ++i) {
-    std::cout << std::hex << static_cast<int>(normArray[i]) << " ";
+  int send_fd = open_serial_connection("/dev/ttyUSB0");
+  int recv_fd = open_serial_connection("/dev/ttyUSB1");
+  // now we can send data and recv data
+  // lets establish a way to send the data now
+  // write(fd,sendbuff,4)
+  // read(fd,j)
+  // int bytes = read(fd, recv_buff, sizeof(recv_buff));
+  while (true) {
+    write(send_fd, enArr, 255);
+    uint8_t recv_buff[255];
+    int bytes = read(recv_fd, recv_buff, 255);
+    if (bytes) {
+      // for (int i = 0; i < send_size; i++) {
+      //   printBinary(ref[i]);
+      // }
+      // cout << endl;
+      // for (int i = 0; i < send_size; i++) {
+      //   printBinary(recv_buff[i]);
+      // }
+      // cout << endl;
+
+      unsigned char decArr[fixedSize];
+      decodeArray(recv_buff, decArr);
+      unsigned char normArray[decArr[3]]; // Creating an array based on
+      natArray(decArr, fixedSize, normArray);
+      for (size_t i = 0; i < normArray[3]; ++i) {
+        printBinary(inputArray[i]);
+        cout << " ";
+      }
+      std::cout << std::endl;
+      // Print the decoded array
+      for (size_t i = 0; i < normArray[3]; ++i) {
+        printBinary(normArray[i]);
+        cout << " ";
+      }
+      std::cout << std::endl;
+    }
   }
-  std::cout << std::endl;
-
   return 0;
 }
