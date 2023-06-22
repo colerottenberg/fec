@@ -1,9 +1,8 @@
-#include "Reed-Solomon/include/rs.hpp"
+#include "rs.hpp"
 #include <cerrno>
 #include <cstdint>
 #include <cstring>
 #include <fcntl.h>
-#include <fec.h>
 #include <iostream>
 #include <ostream>
 #include <stdio.h>
@@ -72,25 +71,25 @@ void natArray(const unsigned char *encodedArray, size_t encodedSize,
   }
 }
 void encodeArray(const unsigned char *inputArray, unsigned char *encodedArray) {
-  RS::ReedSolomon<223, 32> rs;
+  RS::ReedSolomon<4, 4> rs;
   rs.Encode(inputArray, encodedArray);
 }
 void decodeArray(const unsigned char *encodedArray,
                  unsigned char *decodedArray) {
-  RS::ReedSolomon<223, 32> rs;
+  RS::ReedSolomon<4, 4> rs;
   rs.Decode(encodedArray, decodedArray);
 }
 int main() {
   const unsigned char inputArray[] = {0x01, 0x02, 0x03, 0x04};
   const size_t inputSize = sizeof(inputArray) / sizeof(inputArray[0]);
 
-  const size_t fixedSize = 223; // Change this to your desired fixed size
+  const size_t fixedSize = 4; // Change this to your desired fixed size
   unsigned char fixedArray[fixedSize];
 
   // Call the function to encode the input array
   fixArray(inputArray, inputSize, fixedArray, fixedSize);
   // Now we encode with RS codecs
-  unsigned char enArr[255];
+  unsigned char enArr[8];
   encodeArray(fixedArray, enArr);
   /* This is where we implement the sending and recieving of data
    * We expect there to be noise and corruption
@@ -104,25 +103,25 @@ int main() {
   // write(fd,sendbuff,4)
   // read(fd,j)
   // int bytes = read(fd, recv_buff, sizeof(recv_buff));
-  for (int i = 0; i < 5; i++) {
-    write(send_fd, enArr, 255);
-    uint8_t recv_buff[255];
-    int bytes = read(recv_fd, recv_buff, 255);
-    if (bytes) {
+  for (;;) {
+    write(send_fd, enArr, 8);
+    uint8_t recv_buff[8];
+    int bytes = read(recv_fd, recv_buff, 8);
+    if (bytes > 0) {
       unsigned char decArr[fixedSize];
       decodeArray(recv_buff, decArr);
       unsigned char normArray[decArr[3]]; // Creating an array based on
       natArray(decArr, fixedSize, normArray);
       cout << "Original: ";
-      for (size_t i = 0; i < normArray[3]; ++i) {
+      for (size_t i = 0; i < 4; ++i) {
         printBinary(inputArray[i]);
         cout << " ";
       }
       std::cout << std::endl;
       cout << "Decoded: ";
       // Print the decoded array
-      for (size_t i = 0; i < normArray[3]; ++i) {
-        printBinary(normArray[i]);
+      for (size_t i = 0; i < 4; ++i) {
+        printBinary(decArr[i]);
         cout << " ";
       }
       std::cout << std::endl;
