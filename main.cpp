@@ -97,14 +97,16 @@ int main() {
    * Once we recieve we can decode
    */
 
-  int send_fd = open_serial_connection("/dev/ttyUSB0");
-  int recv_fd = open_serial_connection("/dev/ttyUSB1");
+  int send_fd = open_serial_connection("/dev/ttyACM0");
+  int recv_fd = open_serial_connection("/dev/ttyACM1");
   // now we can send data and recv data
   // lets establish a way to send the data now
   // write(fd,sendbuff,4)
   // read(fd,j)
   // int bytes = read(fd, recv_buff, sizeof(recv_buff));
-  while (true) {
+  for (int i = 0; i < 5; i++) {
+  }
+  {
     write(send_fd, enArr, 255);
     uint8_t recv_buff[255];
     int bytes = read(recv_fd, recv_buff, 255);
