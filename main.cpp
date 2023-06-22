@@ -105,21 +105,10 @@ int main() {
   // read(fd,j)
   // int bytes = read(fd, recv_buff, sizeof(recv_buff));
   for (int i = 0; i < 5; i++) {
-  }
-  {
     write(send_fd, enArr, 255);
     uint8_t recv_buff[255];
     int bytes = read(recv_fd, recv_buff, 255);
     if (bytes) {
-      // for (int i = 0; i < send_size; i++) {
-      //   printBinary(ref[i]);
-      // }
-      // cout << endl;
-      // for (int i = 0; i < send_size; i++) {
-      //   printBinary(recv_buff[i]);
-      // }
-      // cout << endl;
-
       unsigned char decArr[fixedSize];
       decodeArray(recv_buff, decArr);
       unsigned char normArray[decArr[3]]; // Creating an array based on
