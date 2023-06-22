@@ -113,11 +113,13 @@ int main() {
       decodeArray(recv_buff, decArr);
       unsigned char normArray[decArr[3]]; // Creating an array based on
       natArray(decArr, fixedSize, normArray);
+      cout << "Original: ";
       for (size_t i = 0; i < normArray[3]; ++i) {
         printBinary(inputArray[i]);
         cout << " ";
       }
       std::cout << std::endl;
+      cout << "Decoded: ";
       // Print the decoded array
       for (size_t i = 0; i < normArray[3]; ++i) {
         printBinary(normArray[i]);
